@@ -12,6 +12,7 @@ for K Means Lab
 
 
 #define NUM_CLUSTERS 40
+#define NUM_THREADS 5
 
 /* kdata.idat */
 #define MAX_NUMS 201
@@ -26,7 +27,7 @@ typedef struct means means;
 
 
 
-    int main(){
+    int main(int argc, const char* argv[] ){
 
 		/* Shared variables */
 		int map [MAX_NUMS][MAX_NUMS];
@@ -78,7 +79,7 @@ typedef struct means means;
                     map [x][y] = tmp;
                     x++;
                     /* Debug */
-                    printf(" %d ",x,y,tmp);
+                    printf(" %d ",tmp);
                 }else{
                     y++;
                     x = 0;
@@ -98,7 +99,7 @@ typedef struct means means;
                 x = rand() % MAX_NUMS;
                 y = rand() % MAX_NUMS;
                 
-                printf("(%d,%d),\n",x,y);
+                printf("(%d,%d),",x,y);
                 
                 means[meanIndex].x = x;
                 means[meanIndex].y = y;
@@ -110,10 +111,38 @@ typedef struct means means;
         
 /*        Now that everything is set up, initalize threads and run */
         #pragma omp parallel shared(map,means)\
-        private (startY,endY,id,nprocs,fp, start, diff,n,xDim,yDim)
+        private (startY,endY,id,nprocs,fp, start, diff,n,xDim,yDim)\
+        num_threads(NUM_THREADS)
         {
             nprocs = omp_get_num_threads();
             id = omp_get_thread_num();
+            
+            #pragma omp barrier
+            /* Find out size to divide work evenly */
+            int n_mod_nprocs = MAX_NUMS % nprocs,
+                chunk_size;
+            
+            /* Figure out how much work can be done across processes */
+            if(id < n_mod_nprocs){
+                
+                chunk_size = MAX_NUMS /nprocs + 1;
+                
+                startY = id*chunk_size;
+                endY = (id+1)*chunk_size;
+                
+            }else{
+                
+                chunk_size = MAX_NUMS/nprocs;
+                
+                startY = (chunk_size+1)*n_mod_nprocs + (id-n_mod_nprocs)*chunk_size;
+                endY = (chunk_size+1)*n_mod_nprocs + (id-n_mod_nprocs+1)*chunk_size;
+                
+            }
+            
+            /*  Check in to make sure space allocated correctly */
+            printf("(%d): chunk_size: %d, startY: %d endY: %d\n",id,chunk_size,startY,endY);
+            
+            
         }
 
         

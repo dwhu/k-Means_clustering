@@ -41,10 +41,9 @@ int main(int argc, char* argv[]){
     /* Shared variables */
     int NUM_THREADS;
     char * FNAME;
-    
     means global_means[NUM_CLUSTERS];
     long global_totals[NUM_CLUSTERS];
-    static int map[MAX_NUM][MAX_NUM];
+    int ** map;
     int finished = 0;
     int MAX_X;
     int MAX_Y;
@@ -66,10 +65,7 @@ int main(int argc, char* argv[]){
     means local_means [NUM_CLUSTERS];
     FILE * fp;
     clock_t start, diff;
-    
-    printf("Starting...\n");
 
-    
     #pragma omp master
     {
         start = clock();
@@ -85,13 +81,17 @@ int main(int argc, char* argv[]){
             exit(2);
         }
         
-        printf("Reading Dimensions\n");
         /* Read off the dimensions of the array */
         r = fscanf(fp,"%d",&MAX_X);
         r = fscanf(fp,"%d",&MAX_Y);
 
+        /* Have to declare malloc.  Otherwise the OS might not give us enough space */
+        map = (int**) malloc(MAX_X*sizeof(int*));
+        for(x=0; x<MAX_X;x++){
+            map[x] = (int*) malloc(MAX_Y*sizeof(int));
+        }
+    
         x=0,y=0;
-        printf("Reading in Array\n");
         do{
             /* Reads in one number  */
             r = fscanf(fp,"%d",&tmp);
@@ -115,24 +115,17 @@ int main(int argc, char* argv[]){
         global_means[0].y = 0;
         global_totals[0] = 0;
         
-        /* Debug */
-        printf("Starting Mean Indexs:\n\n[(0,0)");
-        
         for(mean_index = 1; mean_index < NUM_CLUSTERS; mean_index++) {
             /* Generate random points to start out as the main points of our clusters */
             
             x = abs(rand()) % MAX_X;
             y = abs(rand()) % MAX_Y;
-            printf(",(%d,%d)",x,y);
             
             global_means[mean_index].x = x;
             global_means[mean_index].y = y;
             global_totals[mean_index] = 0;
         }
-        /* Debug */
-        printf("]\n\n");
     }
-
     
     /*        Now that everything is set up, initalize threads and run */
     #pragma omp parallel shared(map,global_means,global_totals,finished,MAX_X,MAX_Y)\
@@ -263,7 +256,7 @@ int main(int argc, char* argv[]){
             /* Let master see if we are done */
             #pragma omp master
             {
-                printf("k-Means Run %d\n",n);
+               /* printf("k-Means Run %d\n",n); */
                 int mean_stayed_same [NUM_CLUSTERS];
                 /* Update Global Means */
                 for(mean_index = 1; mean_index< NUM_CLUSTERS; mean_index++){
@@ -308,7 +301,7 @@ int main(int argc, char* argv[]){
         int msec;
         msec = diff * 1000 / CLOCKS_PER_SEC;
         printf("Time taken %d seconds %d milliseconds\n", msec/1000, msec%1000);
-        
+/*
         printf("Printing the Map:\n\n");
         for (y=0; y< MAX_Y; y++) {
             for (x=0; x < MAX_X; x++) {
@@ -316,6 +309,7 @@ int main(int argc, char* argv[]){
             }
             printf("\n");
         }
+ */
     }
 
     

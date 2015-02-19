@@ -3,6 +3,7 @@
 Program kMeans.c
 for K Means Lab
 
+David Hughes
 */
 
 #include <stdio.h>
@@ -13,10 +14,8 @@ for K Means Lab
 #include <limits.h>
 
 
-#define NUM_CLUSTERS 40
 #define ERROR_THRESHOLD 2
 
-#define MAX_NUM 2000
 
 typedef int bool;
 enum { false, true };
@@ -38,9 +37,15 @@ int main(int argc, char* argv[]){
         exit(1);
     }
     
+    
+    
     /* Shared variables */
-    int NUM_THREADS;
     char * FNAME;
+    int NUM_CLUSTERS;
+    
+    FNAME = argv[1];
+    NUM_CLUSTERS = atoi(argv[2]);
+    
     means global_means[NUM_CLUSTERS];
     long global_totals[NUM_CLUSTERS];
     int ** map;
@@ -64,16 +69,11 @@ int main(int argc, char* argv[]){
     means last_means [NUM_CLUSTERS];
     means local_means [NUM_CLUSTERS];
     FILE * fp;
-    clock_t start, diff;
+    clock_t start, end;
+    double time_spent;
 
     #pragma omp master
     {
-        start = clock();
-        
-        
-        FNAME = argv[1];
-        NUM_THREADS = atoi(argv[2]);
-    
         fp = fopen(FNAME,"r+");
         if(fp == NULL)
         {
@@ -125,12 +125,14 @@ int main(int argc, char* argv[]){
             global_means[mean_index].y = y;
             global_totals[mean_index] = 0;
         }
+        
+        start = clock();
+
     }
     
     /*        Now that everything is set up, initalize threads and run */
     #pragma omp parallel shared(map,global_means,global_totals,finished,MAX_X,MAX_Y)\
-    private (start_Y,end_Y,id,n_procs,n,local_totals,local_means,x,y,mean_index,last_means)\
-    num_threads(NUM_THREADS)
+    private (start_Y,end_Y,id,n_procs,n,local_totals,local_means,x,y,mean_index,last_means)
     {
 
         
@@ -297,19 +299,19 @@ int main(int argc, char* argv[]){
     
     #pragma omp master
     {
-        diff = clock() - start;
-        int msec;
-        msec = diff * 1000 / CLOCKS_PER_SEC;
-        printf("Time taken %d seconds %d milliseconds\n", msec/1000, msec%1000);
-/*
-        printf("Printing the Map:\n\n");
+        end = clock();
+        time_spent = (double)(end-start) / CLOCKS_PER_SEC;
+        printf("Time taken: %f \n", time_spent);
+        
+      
+        printf("%d %d\n", MAX_X, MAX_Y);
         for (y=0; y< MAX_Y; y++) {
             for (x=0; x < MAX_X; x++) {
-                printf("(%d)",map[x][y]);
+                printf(" %d ",map[x][y]);
             }
             printf("\n");
         }
- */
+ 
     }
 
     

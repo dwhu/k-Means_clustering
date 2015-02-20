@@ -86,31 +86,28 @@ int main(int argc, char* argv[]){
         r = fscanf(fp,"%d",&MAX_Y);
 
         /* Have to declare malloc.  Otherwise the OS might not give us enough space */
-        map = (int**) malloc(MAX_X*sizeof(int*));
+        map = (int**) malloc(MAX_Y*sizeof(int*));
+        
         for(x=0; x<MAX_X;x++){
-            map[x] = (int*) malloc(MAX_Y*sizeof(int));
+            map[x] = (int*) malloc(MAX_X*sizeof(int));
         }
     
-        x=0,y=0;
-        do{
-            /* Reads in one number  */
-            r = fscanf(fp,"%d",&tmp);
-            
-            /* When reaches end of line it should iterate y++ and reset x back to 0;  */
-            if ( r != EOF && x < MAX_X && y < MAX_Y) {
-                map [x][y] = tmp;
-                x++;
-                
-            }else{
-                y++;
-                x = 0;
+        r = 1;
+        for(y = 0; y < MAX_Y && r != EOF; y++){
+            for(x = 0; x < MAX_X && r != EOF; x++){
+
+                /* Reads in one number  */
+                r = fscanf(fp,"%d",&tmp);
+
+                if ( r != EOF && x < MAX_X) {
+                    map[x][y] = tmp;                    
+                }
             }
-            
-        } while (r != EOF);
+        }
 
         /* Close File */
         fclose(fp);
-        
+     
         global_means[0].x = 0;
         global_means[0].y = 0;
         global_totals[0] = 0;
@@ -129,8 +126,8 @@ int main(int argc, char* argv[]){
         start = clock();
 
     }
-    
-    /*        Now that everything is set up, initalize threads and run */
+   
+    /* Now that everything is set up, initalize threads and run */
     #pragma omp parallel shared(map,global_means,global_totals,finished,MAX_X,MAX_Y)\
     private (start_Y,end_Y,id,n_procs,n,local_totals,local_means,x,y,mean_index,last_means)
     {
@@ -290,18 +287,15 @@ int main(int argc, char* argv[]){
            /* Make everyone wait for master to finish */
             #pragma omp barrier
            
-      } while (!finished);
+     } while (!finished);
         
     } /* End Parallel Section */
-
-    
-   
     
     #pragma omp master
     {
         end = clock();
         time_spent = (double)(end-start) / CLOCKS_PER_SEC;
-        printf("Time taken: %f \n", time_spent);
+       /* printf("Time taken: %f \n", time_spent); */
         
       
         printf("%d %d\n", MAX_X, MAX_Y);
@@ -309,7 +303,7 @@ int main(int argc, char* argv[]){
             for (x=0; x < MAX_X; x++) {
                 printf(" %d ",map[x][y]);
             }
-            printf("\n");
+          printf("\n");
         }
  
     }
